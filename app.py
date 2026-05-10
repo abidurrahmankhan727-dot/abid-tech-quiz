@@ -12,8 +12,8 @@ st.markdown("""
     .main { background-color: #f8f9fa; }
     .stButton>button { width: 100%; border-radius: 8px; height: 3em; background-color: #28a745; color: white; font-weight: bold; }
     .stRadio>label { font-size: 18px; color: #333; }
-    .correct-box { background-color: #d4edda; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 5px solid #28a745; }
-    .wrong-box { background-color: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 5px solid #dc3545; }
+    .correct-box { background-color: #d4edda; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #28a745; color: #155724; }
+    .wrong-box { background-color: #f8d7da; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #dc3545; color: #721c24; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -38,7 +38,8 @@ if 'quiz_data' not in st.session_state:
     st.session_state.current_q = 0
     st.session_state.score = 0
     st.session_state.game_over = False
-    st.session_state.user_answers = [] # ইউজারের উত্তর জমা রাখার জন্য
+    st.session_state.user_answers = []
+    st.session_state.current_options = []
 
 # সাইডবার সেটিংস
 st.sidebar.header("⚙️ Quiz Settings")
@@ -53,6 +54,7 @@ if st.sidebar.button("🔄 Start New Quiz"):
             st.session_state.score = 0
             st.session_state.game_over = False
             st.session_state.user_answers = []
+            st.session_state.current_options = []
             st.rerun()
 
 # কুইজ ডিসপ্লে লজিক
@@ -66,48 +68,5 @@ if st.session_state.quiz_data and not st.session_state.game_over:
     clean_q = item['question'].replace("&quot;", '"').replace("&#039;", "'").replace("&amp;", "&")
     st.subheader(clean_q)
     
-    # অপশন শাফলিং
-    if 'current_options' not in st.session_state or st.session_state.get('opt_idx') != q_idx:
-        opts = item['incorrect_answers'] + [item['correct_answer']]
-        random.shuffle(opts)
-        st.session_state.current_options = opts
-        st.session_state.opt_idx = q_idx
-
-    user_choice = st.radio("Choose the correct option:", st.session_state.current_options, key=f"radio_{q_idx}")
-
-    if st.button("Submit Answer"):
-        # রেজাল্ট সেভ করা
-        is_correct = user_choice == item['correct_answer']
-        st.session_state.user_answers.append({
-            "question": clean_q,
-            "user_choice": user_choice,
-            "correct_answer": item['correct_answer'],
-            "is_correct": is_correct
-        })
-        
-        if is_correct:
-            st.success("🎯 Correct!")
-            st.session_state.score += 1
-        else:
-            st.error(f"❌ Wrong! Correct answer: {item['correct_answer']}")
-        
-        time.sleep(1)
-        if q_idx + 1 < len(st.session_state.quiz_data):
-            st.session_state.current_q += 1
-        else:
-            st.session_state.game_over = True
-        st.rerun()
-
-# কুইজ শেষ হওয়ার পর রিভিউ সেকশন
-elif st.session_state.game_over:
-    st.balloons()
-    st.header("🏁 Quiz Result & Review")
-    st.metric("Final Score", f"{st.session_state.score} / {len(st.session_state.quiz_data)}")
-    
-    st.subheader("📝 Review Your Answers:")
-    
-    for i, ans in enumerate(st.session_state.user_answers):
-        if ans['is_correct']:
-            st.markdown(f"""<div class="correct-box">
-                <b>Q{i+1}: {ans['question']}</b><br>
-                ✅ Your Answer: {ans['user_
+    # অপশন শাফলিং লজিক (শুধুমাত্র নতুন প্রশ্নের জন্য একবার হবে)
+    if not st.session_state.current
