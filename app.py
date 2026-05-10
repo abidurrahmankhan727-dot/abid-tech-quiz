@@ -3,7 +3,7 @@ import requests
 import random
 import time
 
-# ওয়েবসাইটের নাম ও আইকন সেটআপ
+# পেজ সেটআপ
 st.set_page_config(page_title="ABID TECH QUIZ", page_icon="💻", layout="centered")
 
 # ডিজাইন সুন্দর করার জন্য কাস্টম সিএসএস (CSS)
@@ -20,7 +20,7 @@ st.markdown("""
 st.title("🚀 ABID TECH QUIZ")
 st.write("Welcome! Practice ICT MCQs. Challenge your friends!")
 
-# ইন্টারনেট থেকে প্রশ্ন নিয়ে আসার ফাংশন
+# ইন্টারনেট থেকে প্রশ্ন নিয়ে আসার ফাংশন
 def get_live_questions(count=10):
     try:
         url = f"https://opentdb.com/api.php?amount={count}&category=18&type=multiple"
@@ -32,7 +32,7 @@ def get_live_questions(count=10):
         return None
     return None
 
-# সেশন স্টেট (Quiz ডাটা এবং রেজাল্ট ধরে রাখার জন্য)
+# সেশন স্টেট সেটআপ
 if 'quiz_data' not in st.session_state:
     st.session_state.quiz_data = []
     st.session_state.current_q = 0
@@ -41,7 +41,7 @@ if 'quiz_data' not in st.session_state:
     st.session_state.user_answers = []
     st.session_state.current_options = []
 
-# সাইডবার সেটিংস
+# সাইডবার
 st.sidebar.header("⚙️ Quiz Settings")
 num_questions = st.sidebar.slider("Select Number of Questions", 5, 25, 10)
 
@@ -53,20 +53,4 @@ if st.sidebar.button("🔄 Start New Quiz"):
             st.session_state.current_q = 0
             st.session_state.score = 0
             st.session_state.game_over = False
-            st.session_state.user_answers = []
-            st.session_state.current_options = []
-            st.rerun()
-
-# কুইজ ডিসপ্লে লজিক
-if st.session_state.quiz_data and not st.session_state.game_over:
-    q_idx = st.session_state.current_q
-    item = st.session_state.quiz_data[q_idx]
-    
-    st.info(f"Question {q_idx + 1} of {len(st.session_state.quiz_data)}")
-    
-    # HTML কোড পরিষ্কার করা
-    clean_q = item['question'].replace("&quot;", '"').replace("&#039;", "'").replace("&amp;", "&")
-    st.subheader(clean_q)
-    
-    # অপশন শাফলিং লজিক (শুধুমাত্র নতুন প্রশ্নের জন্য একবার হবে)
-    if not st.session_state.current
+            st.session
