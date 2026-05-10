@@ -2,7 +2,6 @@
 import requests
 import random
 import time
-
 # ওয়েবসাইটের নাম ও আইকন সেটআপ
 st.set_page_config(page_title="ABID TECH QUIZ", page_icon="💻", layout="centered")
 
