@@ -73,4 +73,4 @@ if st.session_state.quiz_data and not st.session_state.game_over:
         random.shuffle(opts)
         st.session_state.current_options = opts
 
-    user_choice = st.radio("Choose the correct answer:", st.session_state
+    user_choice = st.radio"Choose the correct answer:", st.session_state
