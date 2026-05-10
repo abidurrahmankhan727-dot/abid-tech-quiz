@@ -3,10 +3,10 @@ import requests
 import random
 import time
 
-# ১. পেজ সেটআপ
+# ১. পেজ কনফিগারেশন
 st.set_page_config(page_title="ABID TECH QUIZ", page_icon="💻", layout="centered")
 
-# ২. ডিজাইন সুন্দর করার জন্য কাস্টম সিএসএস (CSS)
+# ২. ডিজাইন (CSS)
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
@@ -18,9 +18,9 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("🚀 ABID TECH QUIZ")
-st.write("Welcome! Practice ICT MCQs. Challenge your friends!")
+st.write("Welcome! Practice ICT MCQs with a full Review at the end.")
 
-# ৩. ইন্টারনেট থেকে প্রশ্ন নিয়ে আসার ফাংশন
+# ৩. প্রশ্ন নিয়ে আসার ফাংশন
 def get_live_questions(count=10):
     try:
         url = f"https://opentdb.com/api.php?amount={count}&category=18&type=multiple"
@@ -32,18 +32,18 @@ def get_live_questions(count=10):
         return None
     return None
 
-# ৪. সেশন স্টেট (Quiz ডাটা এবং রিভিউ জমা রাখার জন্য)
+# ৪. সেশন স্টেট ইনিশিয়ালাইজ করা
 if 'quiz_data' not in st.session_state:
     st.session_state.quiz_data = []
     st.session_state.current_q = 0
     st.session_state.score = 0
     st.session_state.game_over = False
-    st.session_state.user_answers = [] # ইউজারের সব উত্তর এখানে জমা থাকবে
-    st.session_state.current_options = []
+    st.session_state.user_answers = []
+    st.session_state.shuffled_options = None
 
 # ৫. সাইডবার সেটিংস
 st.sidebar.header("⚙️ Quiz Settings")
-num_questions = st.sidebar.slider("Select Number of Questions", 5, 25, 10)
+num_questions = st.sidebar.slider("Select Questions", 5, 25, 10)
 
 if st.sidebar.button("🔄 Start New Quiz"):
     with st.spinner("Fetching questions..."):
@@ -54,16 +54,19 @@ if st.sidebar.button("🔄 Start New Quiz"):
             st.session_state.score = 0
             st.session_state.game_over = False
             st.session_state.user_answers = []
-            st.session_state.current_options = []
+            st.session_state.shuffled_options = None
             st.rerun()
 
-# ৬. কুইজ ডিসপ্লে লজিক
+# ৬. কুইজ চলাকালীন ইন্টারফেস
 if st.session_state.quiz_data and not st.session_state.game_over:
     q_idx = st.session_state.current_q
     item = st.session_state.quiz_data[q_idx]
     
     st.info(f"Question {q_idx + 1} of {len(st.session_state.quiz_data)}")
     
-    # HTML কোড পরিষ্কার করা
+    # HTML এনটিটি পরিষ্কার করা
     clean_q = item['question'].replace("&quot;", '"').replace("&#039;", "'").replace("&amp;", "&")
     st.subheader(clean_q)
+    
+    # অপশনগুলো প্রতি প্রশ্নের জন্য একবারই শাফলিং করা
+    if st.session_state.shuffled_options is None:
