@@ -1,84 +1,127 @@
 import streamlit as st
-import time
+import requests
 import random
+import time
 
-# ওয়েবসাইটের কনফিগারেশন
-st.set_page_config(page_title="ABID TECH QUIZ", page_icon="💻")
+# ওয়েবসাইটের নাম ও আইকন সেটআপ
+st.set_page_config(page_title="ABID TECH QUIZ", page_icon="💻", layout="centered")
 
-# কুইজ ডাটাবেস (নমুনা হিসেবে ১০টি দেওয়া হলো, আপনি আরও যোগ করতে পারেন)
-questions_db = [
-    {"q": "What is the full form of DNS?", "a": "Domain Name System", "options": ["Domain Name System", "Data Name System", "Digital Network Service", "Direct Node Serial"]},
-    {"q": "Which is the 'Brain' of the computer?", "a": "CPU", "options": ["RAM", "CPU", "Hard Disk", "Monitor"]},
-    {"q": "What does HTML stand for?", "a": "Hypertext Markup Language", "options": ["Hyperlink Text Markup Language", "Hypertext Markup Language", "Home Tool Markup Language", "Hypertext Machine Language"]},
-    {"q": "Which of the following is a search engine?", "a": "Google", "options": ["Facebook", "Google", "WhatsApp", "Windows"]},
-    {"q": "1 Gigabyte (GB) = ?", "a": "1024 MB", "options": ["1000 MB", "1024 MB", "512 MB", "1024 KB"]},
-    {"q": "What is the shortcut key for Copy?", "a": "Ctrl + C", "options": ["Ctrl + V", "Ctrl + X", "Ctrl + C", "Ctrl + Z"]},
-    {"q": "Which is a volatile memory?", "a": "RAM", "options": ["ROM", "RAM", "Hard Disk", "SSD"]},
-    {"q": "What is the full form of URL?", "a": "Uniform Resource Locator", "options": ["Uniform Resource Locator", "Universal Radio Link", "United Resource Line", "Unique Resource Locator"]},
-    {"q": "Who is the developer of Python?", "a": "Guido van Rossum", "options": ["Mark Zuckerberg", "Bill Gates", "Guido van Rossum", "Steve Jobs"]},
-    {"q": "Which protocol is used to send emails?", "a": "SMTP", "options": ["HTTP", "FTP", "SMTP", "IP"]}
-]
+# ডিজাইন সুন্দর করার জন্য কাস্টম সিএসএস (CSS)
+st.markdown("""
+    <style>
+    .main { background-color: #f8f9fa; }
+    .stButton>button { width: 100%; border-radius: 8px; height: 3em; background-color: #28a745; color: white; font-weight: bold; }
+    .stRadio>label { font-size: 18px; color: #333; }
+    .correct-box { background-color: #d4edda; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 5px solid #28a745; }
+    .wrong-box { background-color: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 5px solid #dc3545; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# হেডার সেকশন
 st.title("🚀 ABID TECH QUIZ")
-st.subheader("Test your ICT knowledge with your friends!")
+st.write("Welcome! Practice ICT MCQs. Challenge your friends!")
 
-# কাস্টমাইজেশন অপশন
-num_q = st.sidebar.slider("Select Number of Questions", 5, len(questions_db), 10)
-time_limit = st.sidebar.number_input("Time limit per question (seconds)", 10, 60, 20)
+# ইন্টারনেট থেকে প্রশ্ন নিয়ে আসার ফাংশন
+def get_live_questions(count=10):
+    try:
+        url = f"https://opentdb.com/api.php?amount={count}&category=18&type=multiple"
+        res = requests.get(url)
+        data = res.json()
+        if data['response_code'] == 0:
+            return data['results']
+    except:
+        return None
+    return None
 
-if 'quiz_started' not in st.session_state:
-    st.session_state.quiz_started = False
+# সেশন স্টেট (Quiz ডাটা এবং রেজাল্ট ধরে রাখার জন্য)
+if 'quiz_data' not in st.session_state:
+    st.session_state.quiz_data = []
+    st.session_state.current_q = 0
     st.session_state.score = 0
-    st.session_state.current_index = 0
+    st.session_state.game_over = False
+    st.session_state.user_answers = [] # ইউজারের উত্তর জমা রাখার জন্য
 
-def start_quiz():
-    st.session_state.quiz_started = True
-    st.session_state.score = 0
-    st.session_state.current_index = 0
-    random.shuffle(questions_db)
-    st.session_state.selected_questions = questions_db[:num_q]
+# সাইডবার সেটিংস
+st.sidebar.header("⚙️ Quiz Settings")
+num_questions = st.sidebar.slider("Select Number of Questions", 5, 25, 10)
 
-if not st.session_state.quiz_started:
-    if st.button("Start Quiz"):
-        start_quiz()
+if st.sidebar.button("🔄 Start New Quiz"):
+    with st.spinner("Fetching questions..."):
+        questions = get_live_questions(num_questions)
+        if questions:
+            st.session_state.quiz_data = questions
+            st.session_state.current_q = 0
+            st.session_state.score = 0
+            st.session_state.game_over = False
+            st.session_state.user_answers = []
+            st.rerun()
+
+# কুইজ ডিসপ্লে লজিক
+if st.session_state.quiz_data and not st.session_state.game_over:
+    q_idx = st.session_state.current_q
+    item = st.session_state.quiz_data[q_idx]
+    
+    st.info(f"Question {q_idx + 1} of {len(st.session_state.quiz_data)}")
+    
+    # HTML কোড পরিষ্কার করা
+    clean_q = item['question'].replace("&quot;", '"').replace("&#039;", "'").replace("&amp;", "&")
+    st.subheader(clean_q)
+    
+    # অপশন শাফলিং
+    if 'current_options' not in st.session_state or st.session_state.get('opt_idx') != q_idx:
+        opts = item['incorrect_answers'] + [item['correct_answer']]
+        random.shuffle(opts)
+        st.session_state.current_options = opts
+        st.session_state.opt_idx = q_idx
+
+    user_choice = st.radio("Choose the correct option:", st.session_state.current_options, key=f"radio_{q_idx}")
+
+    if st.button("Submit Answer"):
+        # রেজাল্ট সেভ করা
+        is_correct = user_choice == item['correct_answer']
+        st.session_state.user_answers.append({
+            "question": clean_q,
+            "user_choice": user_choice,
+            "correct_answer": item['correct_answer'],
+            "is_correct": is_correct
+        })
+        
+        if is_correct:
+            st.success("🎯 Correct!")
+            st.session_state.score += 1
+        else:
+            st.error(f"❌ Wrong! Correct answer: {item['correct_answer']}")
+        
+        time.sleep(1)
+        if q_idx + 1 < len(st.session_state.quiz_data):
+            st.session_state.current_q += 1
+        else:
+            st.session_state.game_over = True
+        st.rerun()
+
+# কুইজ শেষ হওয়ার পর রিভিউ সেকশন
+elif st.session_state.game_over:
+    st.balloons()
+    st.header("🏁 Quiz Result & Review")
+    st.metric("Final Score", f"{st.session_state.score} / {len(st.session_state.quiz_data)}")
+    
+    st.subheader("📝 Review Your Answers:")
+    
+    for i, ans in enumerate(st.session_state.user_answers):
+        if ans['is_correct']:
+            st.markdown(f"""<div class="correct-box">
+                <b>Q{i+1}: {ans['question']}</b><br>
+                ✅ Your Answer: {ans['user_choice']} (Correct)
+                </div>""", unsafe_allow_html=True)
+        else:
+            st.markdown(f"""<div class="wrong-box">
+                <b>Q{i+1}: {ans['question']}</b><br>
+                ❌ Your Answer: {ans['user_choice']}<br>
+                ✔️ Correct Answer: {ans['correct_answer']}
+                </div>""", unsafe_allow_html=True)
+
+    if st.button("Play Again"):
+        st.session_state.quiz_data = []
+        st.session_state.game_over = False
         st.rerun()
 else:
-    q_list = st.session_state.selected_questions
-    idx = st.session_state.current_index
-    
-    if idx < len(q_list):
-        st.write(f"### Question {idx + 1} of {len(q_list)}")
-        current_q = q_list[idx]
-        
-        # টাইমার বার
-        placeholder = st.empty()
-        for t in range(time_limit, -1, -1):
-            placeholder.metric("⏳ Time Remaining", f"{t}s")
-            time.sleep(1)
-            if t == 0:
-                st.warning("Time's up!")
-                st.session_state.current_index += 1
-                st.rerun()
-            
-            # অপশন সিলেকশন (এটি টাইমারের মাঝখানে ইউজার ক্লিক করলে ব্রেক করবে না)
-            answer = st.radio("Choose the correct answer:", current_q["options"], key=f"q_{idx}")
-            
-            if st.button("Submit Answer", key=f"btn_{idx}"):
-                if answer == current_q["a"]:
-                    st.success("Correct!")
-                    st.session_state.score += 1
-                else:
-                    st.error(f"Wrong! Correct answer was: {current_q['a']}")
-                
-                time.sleep(1)
-                st.session_state.current_index += 1
-                st.rerun()
-                break
-    else:
-        st.balloons()
-        st.write("## 🎉 Quiz Completed!")
-        st.write(f"### Your Final Score: {st.session_state.score} out of {len(q_list)}")
-        if st.button("Play Again"):
-            st.session_state.quiz_started = False
-            st.rerun()
+    st.warning("👈 Use the sidebar to click 'Start New Quiz'!")
